@@ -7,6 +7,7 @@ from .metrics import WeeklyMetrics, calculate_growth, calculate_weekly_metrics, 
 from .parser import Session, SessionParser
 from .storage import MetricsDB
 from .tips import RuleTip, generate_tips
+from .tool import mount
 
 __all__ = [
     "SessionParser",
@@ -20,4 +21,5 @@ __all__ = [
     "calculate_weekly_metrics",
     "generate_tips",
     "get_week_start",
+    "mount",
 ]
