@@ -1,0 +1,10 @@
+name: usage-insights
+version: 0.5.0
+description: Conversational insights about your AI collaboration effectiveness
+
+tools:
+  - tools.yaml
+
+contexts:
+  - path: contexts/instructions.md
+    expose_as: usage-insights-guide

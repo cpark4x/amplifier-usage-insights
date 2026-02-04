@@ -1,0 +1,613 @@
+name: "build-v0.5-validation"
+description: "V0.5 Validation Build - Core analytics + conversational interface only"
+version: "0.5.0"
+tags: ["amplifier-usage-insights", "v0.5", "validation", "mvp"]
+
+# V0.5 Goal: Validate core value proposition
+# "Can conversational insights drive behavior change?"
+#
+# What we're building:
+# - Analytics core (parse sessions, calculate metrics, store in SQLite)
+# - Conversational interface (ask "How am I doing?" in Amplifier)
+# - Testing & validation
+#
+# What we're SKIPPING:
+# - Web dashboard (validate conversational first)
+# - LLM-based tips (simple rule-based for now)
+# - Advanced growth analytics (basic week-over-week only)
+#
+# Timeline: 3-6 hours of agent work
+
+context:
+  project_dir: "/Users/chrispark/Projects/amplifier-usage-insights"
+  architecture_doc: "docs/03-technical-architecture/V1-ARCHITECTURE.md"
+  sessions_dir: "~/.amplifier"  # Where to find user's Amplifier sessions
+
+# ============================================================================
+# STAGE 1: Architecture & Design Review
+# ============================================================================
+stages:
+  - name: "architecture-design"
+    steps:
+      - id: "review-architecture"
+        agent: "foundation:zen-architect"
+        mode: "REVIEW"
+        prompt: |
+          Review the V1 architecture document at {{architecture_doc}} in the context of building V0.5.
+          
+          V0.5 Scope (Validation Build):
+          - Analytics Core: Session parser + metrics calculator + SQLite storage
+          - Conversational Interface: Amplifier tool module for NL queries
+          - Testing: Unit + integration tests
+          
+          SKIP for V0.5:
+          - Web dashboard
+          - LLM-based tips (use simple rules)
+          - Advanced growth analytics
+          
+          Questions to answer:
+          1. What from V1 architecture applies to V0.5?
+          2. What can we simplify for validation?
+          3. What's the minimal data model needed?
+          4. What's the minimal tool module interface?
+          5. Any technical risks for V0.5?
+          
+          Provide a focused design for V0.5 that we can build in 3-6 hours.
+        output: "v0.5_design"
+        timeout: 600
+      
+      - id: "create-design-doc"
+        agent: "foundation:file-ops"
+        prompt: |
+          Create V0.5 design document at {{project_dir}}/docs/03-technical-architecture/V0.5-DESIGN.md
+          
+          Based on this analysis: {{v0.5_design}}
+          
+          Structure:
+          # V0.5 Validation Build - Technical Design
+          
+          ## Goal
+          Validate: "Can conversational insights drive behavior change?"
+          
+          ## Scope
+          - What we're building
+          - What we're skipping
+          - Why (validation first)
+          
+          ## Architecture (Simplified)
+          - Components (3-4 only)
+          - Data flow
+          - Data models (minimal)
+          
+          ## Implementation Plan
+          - Phase 1: Core Analytics
+          - Phase 2: Conversational Interface  
+          - Phase 3: Testing & Validation
+          
+          ## Success Criteria
+          - User can ask "How am I doing?" and get useful response
+          - Metrics are accurate (tested against real sessions)
+          - Code quality baseline (80%+ test coverage)
+        output: "design_doc_path"
+        timeout: 300
+      
+      - id: "commit-design"
+        agent: "foundation:git-ops"
+        prompt: |
+          Commit the V0.5 design document:
+          - File: {{design_doc_path}}
+          - Message: "Add V0.5 validation build design"
+        output: "design_commit"
+        timeout: 120
+    approval:
+      required: true
+      prompt: "Review V0.5 design before proceeding to implementation?"
+      timeout: 3600
+      default: "deny"
+
+# ============================================================================
+# STAGE 2: Core Analytics Implementation
+# ============================================================================
+  - name: "core-analytics"
+    steps:
+      - id: "analyze-session-format"
+        agent: "foundation:explorer"
+        prompt: |
+          Analyze Amplifier session format at {{sessions_dir}}/projects/
+          
+          Find:
+          1. Directory structure of sessions
+          2. Format of events.jsonl (what fields exist?)
+          3. Format of transcript.jsonl (conversation history)
+          4. Format of metadata.json (session info)
+          
+          Provide examples of each file format so we can design the parser correctly.
+        output: "session_format_analysis"
+        timeout: 300
+      
+      - id: "design-analytics-core"
+        agent: "foundation:zen-architect"
+        mode: "ARCHITECT"
+        prompt: |
+          Design the analytics core for V0.5.
+          
+          Session format: {{session_format_analysis}}
+          V0.5 design: {{v0.5_design}}
+          
+          Create specifications for:
+          
+          1. SessionParser class
+             - parse_events(events_path) -> dict
+             - parse_transcript(transcript_path) -> dict
+             - parse_metadata(metadata_path) -> dict
+             - extract_session(session_dir) -> Session object
+          
+          2. MetricsCalculator class
+             - calculate_tool_usage(session) -> dict
+             - calculate_duration_metrics(session) -> dict
+             - calculate_delegation_patterns(session) -> dict
+             - calculate_session_metrics(session) -> SessionMetrics
+          
+          3. StorageManager class
+             - SQLite schema (minimal: sessions, metrics tables)
+             - save_session(session)
+             - save_metrics(metrics)
+             - query_metrics(user_id, time_range) -> metrics
+          
+          4. Simple rule-based tips
+             - If bash usage > 50% -> "Consider using grep instead"
+             - If no delegation -> "Try delegating to agents"
+             - If session > 60min -> "Consider breaking into smaller sessions"
+          
+          Provide complete module structure and interfaces.
+        output: "analytics_spec"
+        timeout: 600
+      
+      - id: "implement-session-parser"
+        agent: "foundation:modular-builder"
+        prompt: |
+          Implement SessionParser according to spec: {{analytics_spec}}
+          
+          Location: {{project_dir}}/src/amplifier_usage_insights/core/parser.py
+          
+          Requirements:
+          - Parse events.jsonl, transcript.jsonl, metadata.json
+          - Handle missing/malformed files gracefully
+          - Extract key metrics: tools used, duration, turns, agents used
+          - Return structured Session dataclass
+          - Include docstrings and type hints
+          - 80%+ test coverage
+        output: "parser_implementation"
+        timeout: 900
+      
+      - id: "implement-metrics-calculator"
+        agent: "foundation:modular-builder"
+        prompt: |
+          Implement MetricsCalculator according to spec: {{analytics_spec}}
+          
+          Location: {{project_dir}}/src/amplifier_usage_insights/core/metrics.py
+          
+          Requirements:
+          - Calculate tool usage patterns (counts, percentages)
+          - Calculate duration metrics (total time, avg per turn)
+          - Calculate delegation patterns (agent usage, frequency)
+          - Simple rule-based tips (3-5 rules)
+          - Return structured SessionMetrics dataclass
+          - Include docstrings and type hints
+          - 80%+ test coverage
+        output: "metrics_implementation"
+        timeout: 900
+      
+      - id: "implement-storage"
+        agent: "foundation:modular-builder"
+        prompt: |
+          Implement StorageManager according to spec: {{analytics_spec}}
+          
+          Location: {{project_dir}}/src/amplifier_usage_insights/core/storage.py
+          
+          Requirements:
+          - SQLite local storage (~/.amplifier/insights/insights.db)
+          - Minimal schema: sessions, session_metrics tables
+          - CRUD operations: save_session, save_metrics, query_metrics
+          - Support time range queries (last 7 days, last 30 days)
+          - Handle concurrent access (same user, multiple sessions)
+          - Include docstrings and type hints
+          - 80%+ test coverage
+        output: "storage_implementation"
+        timeout: 900
+      
+      - id: "test-analytics-core"
+        agent: "foundation:test-coverage"
+        prompt: |
+          Create comprehensive tests for analytics core:
+          - {{parser_implementation}}
+          - {{metrics_implementation}}
+          - {{storage_implementation}}
+          
+          Test coverage should include:
+          - Unit tests for each class
+          - Edge cases (missing files, malformed data)
+          - Integration test (parse → calculate → store)
+          - Use real session data from {{sessions_dir}} for integration test
+          
+          Target: 80%+ coverage
+        output: "analytics_tests"
+        timeout: 900
+      
+      - id: "run-tests-analytics"
+        agent: "python-dev:python-dev"
+        prompt: |
+          Run all analytics core tests and check code quality:
+          
+          Location: {{project_dir}}
+          
+          Run:
+          1. pytest src/amplifier_usage_insights/core/tests/ -v --cov
+          2. ruff check src/amplifier_usage_insights/core/
+          3. pyright src/amplifier_usage_insights/core/
+          
+          Report: test results, coverage %, any quality issues
+        output: "analytics_test_results"
+        timeout: 600
+      
+      - id: "commit-analytics-core"
+        agent: "foundation:git-ops"
+        prompt: |
+          Commit the analytics core implementation:
+          
+          Files:
+          - src/amplifier_usage_insights/core/parser.py
+          - src/amplifier_usage_insights/core/metrics.py
+          - src/amplifier_usage_insights/core/storage.py
+          - src/amplifier_usage_insights/core/tests/
+          
+          Message: "Implement V0.5 analytics core (parser, metrics, storage)"
+          
+          Include test results in commit message: {{analytics_test_results}}
+        output: "analytics_commit"
+        timeout: 300
+    approval:
+      required: true
+      prompt: "Review analytics core implementation before building tool interface?"
+      timeout: 3600
+      default: "deny"
+
+# ============================================================================
+# STAGE 3: Conversational Interface
+# ============================================================================
+  - name: "conversational-interface"
+    steps:
+      - id: "design-tool-module"
+        agent: "foundation:zen-architect"
+        mode: "ARCHITECT"
+        prompt: |
+          Design the Amplifier tool module for conversational insights.
+          
+          Analytics core: {{analytics_spec}}
+          
+          Tool Module Requirements:
+          - Name: tool-usage-insights
+          - Entry point: User asks "How am I doing?" or "Show my usage stats"
+          - Operations:
+            * summary: Overall stats (sessions, time, tools)
+            * growth: Week-over-week comparison
+            * tips: Actionable suggestions
+            * detailed: Drill down into specific metric
+          
+          Interface Design:
+          - Natural language queries (handle variations)
+          - Return formatted text (markdown-style)
+          - Include metrics + visualization (text-based charts)
+          - Include tips at the end
+          
+          Example interaction:
+          User: "How am I doing with AI this week?"
+          Tool: 
+          ```
+          📊 Your AI Usage This Week
+          
+          Sessions: 12 (↑ 20% vs last week)
+          Total Time: 6.5 hours
+          Most Used Tools: grep (24), read_file (18), bash (12)
+          
+          🚀 Growth
+          - Tool sophistication: ↑ 15%
+          - Delegation frequency: → (stable)
+          
+          💡 Tips
+          - You're using bash frequently - consider grep for searches
+          - Try delegating more complex tasks to agents
+          ```
+          
+          Provide complete module structure and implementation plan.
+        output: "tool_module_spec"
+        timeout: 600
+      
+      - id: "implement-tool-module"
+        agent: "foundation:modular-builder"
+        prompt: |
+          Implement the Amplifier tool module according to spec: {{tool_module_spec}}
+          
+          Location: {{project_dir}}/tool-usage-insights/
+          
+          Structure:
+          - __init__.py (tool registration)
+          - __main__.py (CLI entry point)
+          - queries.py (handle NL queries)
+          - formatters.py (format output)
+          - tests/
+          
+          Requirements:
+          - Use analytics core (parser, metrics, storage)
+          - Handle natural language variations
+          - Format output clearly (markdown-style)
+          - Include simple text-based visualizations (bars, trends)
+          - Return actionable tips
+          - 80%+ test coverage
+        output: "tool_module_implementation"
+        timeout: 1200
+      
+      - id: "test-tool-module"
+        agent: "foundation:test-coverage"
+        prompt: |
+          Create comprehensive tests for tool module: {{tool_module_implementation}}
+          
+          Test coverage:
+          - Unit tests for query parsing
+          - Unit tests for formatters
+          - Integration test with real session data
+          - Test various user queries:
+            * "How am I doing?"
+            * "Show my stats for last week"
+            * "What tools do I use most?"
+            * "Am I getting better?"
+          
+          Target: 80%+ coverage
+        output: "tool_tests"
+        timeout: 900
+      
+      - id: "run-tests-tool"
+        agent: "python-dev:python-dev"
+        prompt: |
+          Run tool module tests and check code quality:
+          
+          Location: {{project_dir}}/tool-usage-insights/
+          
+          Run:
+          1. pytest -v --cov
+          2. ruff check .
+          3. pyright .
+          
+          Report: test results, coverage %, any quality issues
+        output: "tool_test_results"
+        timeout: 600
+      
+      - id: "integration-test-real-sessions"
+        agent: "foundation:explorer"
+        prompt: |
+          Run integration test with user's real Amplifier sessions:
+          
+          1. Use tool module to analyze sessions in {{sessions_dir}}
+          2. Test queries:
+             - "How am I doing?"
+             - "Show stats for last 7 days"
+             - "What should I improve?"
+          3. Verify:
+             - Metrics are accurate
+             - Output is readable
+             - Tips make sense
+          
+          Report: Does the tool provide valuable insights?
+        output: "integration_test_results"
+        timeout: 900
+      
+      - id: "commit-tool-module"
+        agent: "foundation:git-ops"
+        prompt: |
+          Commit the tool module implementation:
+          
+          Files:
+          - tool-usage-insights/
+          
+          Message: "Implement V0.5 conversational interface (tool module)"
+          
+          Include:
+          - Test results: {{tool_test_results}}
+          - Integration results: {{integration_test_results}}
+        output: "tool_commit"
+        timeout: 300
+    approval:
+      required: true
+      prompt: "Review tool module before final testing and validation?"
+      timeout: 3600
+      default: "deny"
+
+# ============================================================================
+# STAGE 4: Testing & Validation
+# ============================================================================
+  - name: "testing-validation"
+    steps:
+      - id: "run-full-test-suite"
+        agent: "python-dev:python-dev"
+        prompt: |
+          Run complete test suite for V0.5:
+          
+          Location: {{project_dir}}
+          
+          Run:
+          1. pytest -v --cov --cov-report=term-missing
+          2. ruff check .
+          3. pyright .
+          
+          Requirements:
+          - 80%+ test coverage
+          - No ruff errors
+          - No pyright errors
+          
+          Report: Overall quality assessment
+        output: "final_test_results"
+        timeout: 900
+      
+      - id: "validate-with-real-data"
+        agent: "foundation:explorer"
+        prompt: |
+          Validate V0.5 with user's real session data:
+          
+          1. Analyze last 30 days of sessions from {{sessions_dir}}
+          2. Calculate all metrics
+          3. Generate insights and tips
+          4. Verify accuracy manually (spot check 3-5 sessions)
+          
+          Questions:
+          - Are metrics accurate?
+          - Are tips actionable and relevant?
+          - Is output easy to understand?
+          - Would user actually use this?
+          
+          Provide validation report.
+        output: "validation_report"
+        timeout: 900
+      
+      - id: "create-user-guide"
+        agent: "foundation:file-ops"
+        prompt: |
+          Create user guide for V0.5:
+          
+          Location: {{project_dir}}/docs/V0.5-USER-GUIDE.md
+          
+          Content:
+          # V0.5 User Guide
+          
+          ## Installation
+          - How to install the tool module
+          - How to set up local storage
+          
+          ## Usage
+          - How to query insights
+          - Example queries
+          - How to interpret metrics
+          - How to use tips
+          
+          ## What's Included
+          - Session analysis
+          - Tool usage tracking
+          - Basic growth metrics
+          - Rule-based tips
+          
+          ## What's Coming (V1.0)
+          - Web dashboard
+          - Advanced growth analytics
+          - LLM-based personalized tips
+          - Team insights
+          
+          ## Troubleshooting
+          - Common issues
+          - How to report bugs
+        output: "user_guide_path"
+        timeout: 300
+      
+      - id: "create-readme"
+        agent: "foundation:file-ops"
+        prompt: |
+          Update project README with V0.5 status:
+          
+          Location: {{project_dir}}/README.md
+          
+          Add:
+          - Current status: V0.5 Validation Build
+          - What's working: Analytics core + conversational interface
+          - How to use it
+          - Link to user guide
+          - Link to vision docs
+          - Next steps (V1.0)
+        output: "readme_path"
+        timeout: 300
+      
+      - id: "final-commit"
+        agent: "foundation:git-ops"
+        prompt: |
+          Create final V0.5 commit:
+          
+          Files:
+          - docs/V0.5-USER-GUIDE.md
+          - README.md
+          - Any remaining files
+          
+          Message: "Complete V0.5 validation build"
+          
+          Include in message:
+          - Test results summary: {{final_test_results}}
+          - Validation summary: {{validation_report}}
+        output: "final_commit"
+        timeout: 300
+      
+      - id: "create-v0.5-tag"
+        agent: "foundation:git-ops"
+        prompt: |
+          Create v0.5.0 git tag:
+          
+          Tag: v0.5.0
+          Message: |
+            V0.5 Validation Build
+            
+            Features:
+            - Analytics core (session parser, metrics calculator, SQLite storage)
+            - Conversational interface (tool module for NL queries)
+            - Basic growth tracking (week-over-week)
+            - Rule-based tips
+            
+            Testing:
+            - {{final_test_results}}
+            
+            Validation:
+            - {{validation_report}}
+            
+            Next: Gather user feedback, iterate, then build web dashboard for V1.0
+        output: "tag_created"
+        timeout: 300
+      
+      - id: "final-summary"
+        agent: "foundation:zen-architect"
+        mode: "REVIEW"
+        prompt: |
+          Provide final V0.5 summary:
+          
+          Design: {{v0.5_design}}
+          Analytics: {{analytics_commit}}
+          Tool: {{tool_commit}}
+          Tests: {{final_test_results}}
+          Validation: {{validation_report}}
+          
+          Summary should include:
+          1. What was built
+          2. Quality metrics (test coverage, code quality)
+          3. Validation results (does it work with real data?)
+          4. Recommended next steps:
+             - Use it for 1-2 weeks
+             - Gather personal feedback
+             - Identify what's valuable vs. noise
+             - Decide: build web dashboard (V1.0) or iterate on conversational?
+          5. Time spent (estimate)
+          
+          Be honest: Is this ready for real use? What needs improvement?
+        output: "v0.5_summary"
+        timeout: 600
+    approval:
+      required: true
+      prompt: "Review final V0.5 summary and approve release?"
+      timeout: 3600
+      default: "deny"
+
+# ============================================================================
+# Success Criteria
+# ============================================================================
+
+# V0.5 is successful if:
+# 1. User can ask "How am I doing?" and get useful response ✓
+# 2. Metrics are accurate (tested against real sessions) ✓
+# 3. Code quality baseline (80%+ test coverage) ✓
+# 4. User actually uses it for 1-2 weeks to validate value
+#
+# Next decision point: Does conversational interface provide enough value?
+# - If YES: Build web dashboard (V1.0)
+# - If NO: Iterate on metrics/tips before investing in dashboard

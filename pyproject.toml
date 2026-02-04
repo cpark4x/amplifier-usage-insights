@@ -1,0 +1,36 @@
+[project]
+name = "amplifier-usage-insights"
+version = "0.5.0"
+description = "Conversational insights about your AI collaboration effectiveness (validation build)"
+authors = [{name = "Chris Park"}]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+dependencies = [
+    "python-dateutil>=2.8.0",
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.2.0",
+    "pyright>=1.1.0",
+]
+
+[project.scripts]
+amplifier-insights = "amplifier_usage_insights.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pyright]
+typeCheckingMode = "strict"

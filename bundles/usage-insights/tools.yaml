@@ -1,0 +1,28 @@
+tools:
+  - name: get_usage_insights
+    description: |
+      Get insights about your AI collaboration effectiveness.
+      
+      Ask questions like:
+      - "How am I doing this week?"
+      - "What tools do I use most?"
+      - "Am I improving?"
+      - "Show my growth"
+      - "What are my tips for improvement?"
+      
+      Returns personalized insights based on your Amplifier session history including:
+      - Weekly session counts and trends
+      - Tool usage patterns and recommendations
+      - Growth indicators (week-over-week changes)
+      - Actionable tips to improve effectiveness
+    
+    implementation:
+      module: amplifier_usage_insights.insights
+      function: get_personal_insights
+    
+    parameters:
+      query:
+        type: string
+        description: What you want to know about your AI usage (e.g., "How am I doing?", "Show my tool usage", "Am I improving?")
+        required: false
+        default: "How am I doing this week?"
