@@ -143,7 +143,7 @@ Insights Engine (query interface)
 
 ## Related
 
-- [amplifier-session-insights](https://github.com/cpark4x/amplifier-session-insights) — Session-level data collection
+- [amplifier-session-capture](https://github.com/cpark4x/amplifier-session-capture) — Session-level data collection
 - [amplifier-doc-driven-dev](https://github.com/cpark4x/amplifier-doc-driven-dev) — Documentation-driven development recipes
 
 ---
